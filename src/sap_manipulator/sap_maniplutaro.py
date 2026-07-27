@@ -34,12 +34,12 @@ class SapManipulator:
         su = self.session.findById("wnd[0]/usr/ctxtLTAP-VLENR").text
         modulo = self.session.findById("wnd[0]/usr/txtLTAP-NLPLA").text
         quantity:str = self.session.findById("wnd[0]/usr/txtLTAP-NSOLA").text
-
+        quantity = quantity.replace(".", "").replace(",", ".")
         return {
             "position": posicao,
             "batch": lote,
             "su": su,
-            "quantity":float(quantity.replace(",",".")),
+            "quantity":float(quantity),
             "module": modulo,
         }
 

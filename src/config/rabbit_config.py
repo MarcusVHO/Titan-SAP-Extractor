@@ -2,7 +2,6 @@ import os
 
 
 class RabbitConfig:
-
     HOST = os.getenv("RABBITMQ_HOST", "localhost")
     PORT = int(os.getenv("RABBITMQ_PORT", 5672))
     USER = os.getenv("RABBITMQ_USERNAME", "guest")
