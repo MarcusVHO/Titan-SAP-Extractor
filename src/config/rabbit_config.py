@@ -1,16 +1,25 @@
-import os
+from src.config.app_config import config, AppConfig
 
-
+# Backward compatibility alias
 class RabbitConfig:
-    HOST = os.getenv("RABBITMQ_HOST", "localhost")
-    PORT = int(os.getenv("RABBITMQ_PORT", 5672))
-    USER = os.getenv("RABBITMQ_USERNAME", "guest")
-    PASSWORD = os.getenv("RABBITMQ_PASSWORD", "guest")
+    @property
+    def HOST(self):
+        return config.RABBITMQ_HOST
 
-    EXCHANGE = "sap.exchange"
+    @property
+    def PORT(self):
+        return config.RABBITMQ_PORT
 
-    EXECUTE_QUEUE = "sap.execute.queue"
-    RESPONSE_QUEUE = "sap.response.queue"
+    @property
+    def USER(self):
+        return config.RABBITMQ_USER
 
-    EXECUTE_ROUTING_KEY = "sap.execute"
-    RESPONSE_ROUTING_KEY = "sap.response"
+    @property
+    def PASSWORD(self):
+        return config.RABBITMQ_PASSWORD
+
+    EXCHANGE = config.RABBITMQ_EXCHANGE
+    EXECUTE_QUEUE = config.EXECUTE_QUEUE
+    RESPONSE_QUEUE = config.RESPONSE_QUEUE
+    EXECUTE_ROUTING_KEY = config.EXECUTE_ROUTING_KEY
+    RESPONSE_ROUTING_KEY = config.RESPONSE_ROUTING_KEY

@@ -1,9 +1,8 @@
 import sys
 import os
 
-# Adiciona o diretório raiz do projeto e a pasta src ao sys.path
-root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-src_dir = os.path.abspath(os.path.dirname(__file__))
+root_dir = os.path.abspath(os.path.dirname(__file__))
+src_dir = os.path.join(root_dir, "src")
 
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
@@ -14,7 +13,6 @@ from src.gui.app import TitanSapManipulatorApp
 
 
 def main():
-    """Ponto de entrada principal da aplicação Titan-SAP-Manipulator."""
     app = TitanSapManipulatorApp()
     app.mainloop()
 
