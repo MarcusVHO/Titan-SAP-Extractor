@@ -1,3 +1,4 @@
+import pythoncom
 import win32com.client
 
 
@@ -23,10 +24,22 @@ class SapManipulator:
     """
 
     def __init__(self):
-        self.session = None
+        try:
+            pythoncom.CoInitialize()
+            SapGuiAuto = win32com.client.GetObject("SAPGUI")
+            application = SapGuiAuto.GetScriptingEngine
+            connection = application.Children(0)
+            self.session = connection.Children(0)
+        except Exception:
+            self.session = None
 
     def connect(self) -> bool:
         """Conecta com a sessão ativa do SAP GUI Scripting Engine."""
+        try:
+            pythoncom.CoInitialize()
+        except Exception:
+            pass
+
         errors = []
         sap_gui_auto = None
 
@@ -75,49 +88,48 @@ class SapManipulator:
         """Verifica se a sessão SAP está conectada."""
         return self.session is not None
 
-    def request_item(self, sku: str, modulo: str) -> dict:
-        """
-        Executa a transação /nlt01 para requisição de material no SAP.
-        """
-        if not self.is_connected():
-            self.connect()
-
+    def request_item(self, sku, modulo):
         try:
-            lote = None
-            self.session.findById("wnd[0]/tbar[0]/okcd").text = "/nlt01"
-            self.session.findById("wnd[0]").sendVKey(0)
-            self.session.findById("wnd[0]/usr/ctxtLTAK-LGNUM").text = "b02"
-            self.session.findById("wnd[0]/usr/ctxtLTAK-BWLVS").text = "998"
-            self.session.findById("wnd[0]/usr/ctxtLTAP-MATNR").text = str(sku)
-            self.session.findById("wnd[0]/usr/txtRL03T-ANFME").text = "999999999"
-            self.session.findById("wnd[0]/usr/ctxtLTAP-WERKS").text = "brad"
-            self.session.findById("wnd[0]").sendVKey(0)
-            self.session.findById("wnd[0]/usr/ctxtLTAP-NLTYP").text = "ws5"
-            self.session.findById("wnd[0]/usr/txtLTAP-NLPLA").text = f"w{str(modulo)}"
-            self.session.findById("wnd[0]").sendVKey(0)
-            self.session.findById("wnd[0]/usr/chkRL03T-SQUIT").selected = True
+            pythoncom.CoInitialize()
+        except Exception:
+            pass
 
-            posicao = self.session.findById("wnd[0]/usr/txtLTAP-VLPLA").text
+        self.connect()
 
-            try:
-                lote = self.session.findById("wnd[0]/usr/ctxtLTAP-CHARG").text
-            except Exception:
-                lote = None
 
-            su = self.session.findById("wnd[0]/usr/ctxtLTAP-VLENR").text
-            modulo_res = self.session.findById("wnd[0]/usr/txtLTAP-NLPLA").text
+        lote = None
+        self.session.findById("wnd[0]/tbar[0]/okcd").text = "/nlt01"
+        self.session.findById("wnd[0]").sendVKey(0)
+        self.session.findById("wnd[0]/usr/ctxtLTAK-LGNUM").text = "b02"
+        self.session.findById("wnd[0]/usr/ctxtLTAK-BWLVS").text = "998"
+        self.session.findById("wnd[0]/usr/ctxtLTAP-MATNR").text = str(sku)
+        self.session.findById("wnd[0]/usr/txtRL03T-ANFME").text = "999999999"
+        self.session.findById("wnd[0]/usr/ctxtLTAP-WERKS").text = "brad"
+        self.session.findById("wnd[0]").sendVKey(0)
+        self.session.findById("wnd[0]/usr/ctxtLTAP-NLTYP").text = "ws5"
+        self.session.findById("wnd[0]/usr/txtLTAP-NLPLA").text = f"w{str(modulo)}"
+        self.session.findById("wnd[0]").sendVKey(0)
+        self.session.findById("wnd[0]/usr/chkRL03T-SQUIT").selected = True
+        posicao = self.session.findById("wnd[0]/usr/txtLTAP-VLPLA").text
+        try:
+            lote = self.session.findById("wnd[0]/usr/ctxtLTAP-CHARG").text
+        except:
+            pass
 
-            quantity_raw: str = self.session.findById("wnd[0]/usr/txtLTAP-NSOLA").text
-            quantity_cleaned = quantity_raw.replace(".", "").replace(",", ".")
-            quantity_val = float(quantity_cleaned) if quantity_cleaned else 0.0
+        su = self.session.findById("wnd[0]/usr/ctxtLTAP-VLENR").text
+        modulo = self.session.findById("wnd[0]/usr/txtLTAP-NLPLA").text
+        quantity:str = self.session.findById("wnd[0]/usr/txtLTAP-NSOLA").text
+        quantity = quantity.replace(".", "").replace(",", ".")
+        return {
+            "position": posicao,
+            "batch": lote,
+            "su": su,
+            "quantity":float(quantity),
+            "module": modulo,
+        }
 
-            return {
-                "position": posicao,
-                "batch": lote,
-                "su": su,
-                "quantity": quantity_val,
-                "module": modulo_res,
-                "status": "SUCCESS"
-            }
-        except Exception as e:
-            raise SapExecutionError(f"Erro na transação LT01 (SKU: {sku}, Módulo: {modulo}): {str(e)}") from e
+
+if __name__ == "__main__":
+    app = SapManipulator()
+    app.request_item(sku="40111115", modulo="sd21")
+

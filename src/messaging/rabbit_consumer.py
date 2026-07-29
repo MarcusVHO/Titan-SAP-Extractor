@@ -27,6 +27,18 @@ class RabbitConsumer:
     def start(self):
         """Inicia a escuta da fila."""
         self._is_consuming = True
+
+        # Valida disponibilidade do SAP GUI antes de consumir a fila
+        if hasattr(self.service, "manipulator") and self.service.manipulator:
+            try:
+                self.service.manipulator.connect()
+            except Exception as e:
+                self.log(f"⚠️ SAP GUI não está disponível ({str(e)}). O consumo da fila NÃO será iniciado.", "WARNING")
+                self._is_consuming = False
+                if self.metric_callback:
+                    self.metric_callback({"status": "SAP_UNAVAILABLE", "error": str(e)})
+                return
+
         self.log(f"Registrando consumidor na fila '{self.cfg.EXECUTE_QUEUE}'...", "INFO")
 
         try:
@@ -74,9 +86,16 @@ class RabbitConsumer:
             if self.metric_callback:
                 self.metric_callback({"status": "ERROR", "error": "Invalid JSON"})
 
-        except Exception as e:
-            self.log(f"Erro ao processar mensagem SAP: {str(e)}", "ERROR")
-            # Reenfileira ou rejeita dependendo da regra
+        except ValueError as ve:
+            self.log(f"Mensagem com formato inválido: {str(ve)}", "ERROR")
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
             if self.metric_callback:
+                self.metric_callback({"status": "ERROR", "error": str(ve)})
+
+        except Exception as e:
+            self.log(f"Erro ao processar mensagem no SAP ({str(e)}). Devolvendo mensagem para a fila (requeue)...", "ERROR")
+            # requeue=True garante que a mensagem NÃO seja consumida/descartada da fila se o SAP falhar
+            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+            if self.metric_callback:
                 self.metric_callback({"status": "ERROR", "error": str(e)})
+
