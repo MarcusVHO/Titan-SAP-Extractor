@@ -1,5 +1,8 @@
-import pythoncom
-import win32com.client
+import sys
+
+if sys.platform == "win32":
+    import pythoncom
+    import win32com.client
 
 
 class SapException(Exception):
